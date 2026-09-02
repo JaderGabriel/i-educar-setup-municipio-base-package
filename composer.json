@@ -1,0 +1,45 @@
+{
+    "name": "buriti/i-educar-setup-municipio-base-package",
+    "description": "Setup municipal genérico do i-Educar: fluxo completo BNCC, calendário, perfis, turmas, auditoria e tipos de boletim.",
+    "version": "1.0.0",
+    "type": "library",
+    "license": "GPL-2.0-or-later",
+    "keywords": [
+        "ieducar",
+        "setup",
+        "municipio",
+        "buriti"
+    ],
+    "authors": [
+        {
+            "name": "Buriti"
+        }
+    ],
+    "require": {
+        "php": ">=8.3",
+        "buriti/i-educar-setup-package": "^1.7",
+        "illuminate/support": "^11.0|^12.0|^13.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "iEducar\\Packages\\BuritiSetupMunicipioBase\\": "src/",
+            "iEducar\\Packages\\BuritiSetupMunicipioBase\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "iEducar\\Packages\\BuritiSetupMunicipioBase\\Providers\\BuritiSetupMunicipioBaseServiceProvider"
+            ]
+        },
+        "ieducar": {
+            "compatible": [
+                "2.11",
+                "2.12"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true
+    }
+}
