@@ -13,7 +13,9 @@ use iEducar\Packages\BuritiSetup\Shared\EducacaoInfantilInstituicaoResolver;
 use iEducar\Packages\BuritiSetup\Shared\EducacaoInfantilSetupPadrao;
 use iEducar\Packages\BuritiSetup\Shared\IeducarSetupContext;
 use iEducar\Packages\BuritiSetup\Shared\SetupCadastroComumService;
+use iEducar\Packages\BuritiSetup\Shared\SetupOnWrongDatabase;
 use iEducar\Packages\BuritiSetup\Shared\SetupPosExecucaoService;
+use iEducar\Packages\BuritiSetup\Shared\SetupTenantGuard;
 use iEducar\Packages\BuritiSetupMunicipioBase\Database\Seeders\MunicipioGenericoSetupSeeder;
 use iEducar\Packages\BuritiSetupMunicipioBase\MunicipioGenerico\MunicipioGenericoMunicipalData;
 use Illuminate\Console\Command;
@@ -36,6 +38,7 @@ final class IeducarSetupMunicipioBase extends Command
                             {--sem-turmas : Não gera turmas regulares (somente AEE)}
                             {--dry-run : Simula auditoria e tipo_boletim}
                             {--ano= : Ano letivo (padrão: IEDUCAR_MUNICIPIO_BASE_ANO_LETIVO ou ano corrente)}
+                            {--database= : Conexão do município. No multi-tenant precisa ser a da cidade configurada}
                             {--force-production : Permite em APP_ENV=production}';
 
     protected $description = 'Setup municipal genérico: BNCC, calendário, perfis, turmas, auditoria e tipos de boletim';
@@ -65,9 +68,26 @@ final class IeducarSetupMunicipioBase extends Command
         IeducarSetupContext::setEducacaoInfantilPadrao($padraoInfantil);
         IeducarSetupContext::setEnsinoMedioApenasCursoNoFluxoPadrao(true);
 
+        $slug = SetupTenantGuard::slugFromCity(
+            MunicipioGenericoMunicipalData::cidade(),
+            MunicipioGenericoMunicipalData::uf(),
+        );
+
+        if ($slug === '') {
+            $slug = SetupTenantGuard::SLUG_GENERICO_SEM_CIDADE;
+        }
+
+        try {
+            $connection = SetupTenantGuard::pin($slug);
+        } catch (SetupOnWrongDatabase $e) {
+            $this->error($e->getMessage());
+
+            return self::FAILURE;
+        }
+
         $ano = $this->resolveAnoLetivo();
 
-        $this->info('🚀 Setup municipal genérico (perfil '.MunicipioGenericoMunicipalData::SLUG.')');
+        $this->info('🚀 Setup municipal genérico (perfil '.$slug.')');
         $this->line('👶 Educação Infantil: '.EducacaoInfantilSetupPadrao::label($padraoInfantil));
         $this->line('📅 Ano letivo alvo: '.$ano);
         Log::channel('daily')->info('ieducar:setup-municipio-base iniciado', ['ano' => $ano]);
@@ -80,7 +100,7 @@ final class IeducarSetupMunicipioBase extends Command
 
         try {
             if (!$skipMaster) {
-                $this->call('db:seed', ['--class' => SeederMaster::class, '--force' => true]);
+                $this->call('db:seed', SetupTenantGuard::seed(SeederMaster::class, $connection));
                 (new SetupCadastroComumService($this))->aplicar(
                     instituicaoIds: EducacaoInfantilInstituicaoResolver::ids(),
                     anoLetivo: $ano,
@@ -88,10 +108,7 @@ final class IeducarSetupMunicipioBase extends Command
                 $bar->advance();
             }
 
-            $this->call('db:seed', [
-                '--class' => MunicipioGenericoSetupSeeder::class,
-                '--force' => true,
-            ]);
+            $this->call('db:seed', SetupTenantGuard::seed(MunicipioGenericoSetupSeeder::class, $connection));
             $bar->advance();
         } catch (\Throwable $e) {
             $this->error('❌ Erro no setup: '.$e->getMessage());

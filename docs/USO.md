@@ -26,6 +26,7 @@ php artisan ieducar:setup-municipio-base [opções]
 | `--skip-tipo-boletim` | Não define `tipo_boletim` |
 | `--auditoria-sem-corrigir` | Só relata problemas na auditoria |
 | `--dry-run` | Simula auditoria e boletim sem gravar |
+| `--database=` | Conexão do município. No multi-tenant precisa ser a da cidade do `.env` |
 | `--force-production` | Permite em `APP_ENV=production` |
 
 ## Variáveis `.env`
@@ -58,6 +59,20 @@ Colunas (layout INEP + endereço, igual ao pacote setup):
 Arquivo: `database/seeders/data/municipio-generico-escolas.csv` (neste pacote) ou `database/seeders/Setup/data/` no app.
 
 Se o CSV **não existir**, o setup **continua** com aviso — útil em laboratório; em produção o CSV deve estar presente.
+
+## Multi-tenant
+
+Com `APP_MULTI_TENANT=true` o comando não grava até a cidade bater com a base.
+
+`IEDUCAR_MUNICIPIO_BASE_CIDADE` e `IEDUCAR_MUNICIPIO_BASE_UF` viram o slug (`São José` + `SC` → `sao-jose-sc`). Esse slug precisa ser o da conexão (`DB_CONNECTION` ou `--database`) em `config/tenants.catalog`. O valor genérico (`Município Genérico` / `BR`) é recusado.
+
+A mesma trava do pacote setup vale aqui: conexão no catálogo, `pmieducar.instituicao` já migrada, instituição gravada que não seja outro município, e banco aberto igual ao da conexão. Os seeds recebem `--database`.
+
+```bash
+DB_CONNECTION=sao_jose php artisan ieducar:setup-municipio-base --database=sao_jose --ano=2026
+```
+
+Sem multi-tenant, o comando segue na conexão atual.
 
 ## Exemplos
 

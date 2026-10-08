@@ -10,6 +10,8 @@ Diferente do [`buriti/i-educar-setup-package`](../i-educar-setup-package), este 
 php artisan ieducar:setup-municipio-base
 ```
 
+Com `APP_MULTI_TENANT=true`, a cidade e a UF do `.env` precisam ser as da conexão atual. O comando para antes de gravar se a base for outra. Ver [`docs/USO.md`](docs/USO.md).
+
 ## Documentação
 
 | Documento | Conteúdo |
